@@ -371,13 +371,25 @@ fn render_settings(f:&mut Frame,area:Rect,s:&Settings) {
 
 fn handle_input(app:&mut App)->Result<()> {
     if event::poll(Duration::from_millis(50))? {
-        if let Event::Key(key)=event::read()? {
+      if let Event::Key(key)=event::read()? {
             if key.kind!=KeyEventKind::Press { return Ok(()); }
+
+            // 1. Handle global keys FIRST so they are never blocked
+            match key.code {
+                KeyCode::Char('q') | KeyCode::Char('Q') => { app.running = false; return Ok(()); }
+                KeyCode::Tab => { app.next(); return Ok(()); }
+                KeyCode::BackTab => { app.prev(); return Ok(()); }
+                _ => {}
+            }
+
+            // 2. Handle File Explorer overrides
             if key.code==KeyCode::Esc { if app.explorer.focused { app.explorer.focused=false; return Ok(()); } }
             if app.tab==Tab::Storage&&app.explorer.focused {
                 match key.code { KeyCode::Up=>app.explorer.up(), KeyCode::Down=>app.explorer.down(), KeyCode::Enter=>app.explorer.enter(), _=>{} }
                 return Ok(());
             }
+
+            // 3. Handle Settings overrides
             if app.tab==Tab::Settings {
                 match key.code {
                     KeyCode::Up=>{ if app.settings.selected>0{app.settings.selected-=1;} }
@@ -389,10 +401,10 @@ fn handle_input(app:&mut App)->Result<()> {
                 }
                 return Ok(());
             }
+
+            // 4. Default navigation for standard tabs
             match key.code {
-                KeyCode::Char('q')|KeyCode::Char('Q')=>app.running=false,
                 KeyCode::Up=>app.prev(), KeyCode::Down=>app.next(),
-                KeyCode::Tab=>app.next(), KeyCode::BackTab=>app.prev(),
                 KeyCode::Enter=>{ if app.tab==Tab::Storage { app.explorer.focused=true; } }
                 _=>{}
             }
@@ -400,6 +412,9 @@ fn handle_input(app:&mut App)->Result<()> {
     }
     Ok(())
 }
+
+
+
 
 fn main()->Result<()> {
     enable_raw_mode()?;

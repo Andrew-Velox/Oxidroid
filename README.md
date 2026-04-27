@@ -25,11 +25,6 @@ cargo run --release
 ```
 
 
-## Usage
-
-```
-termux-monitor
-```
 
 | Key | Action |
 |-----|--------|

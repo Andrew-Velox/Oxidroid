@@ -201,7 +201,7 @@ fn render(f:&mut Frame, app:&mut App) {
 fn render_header(f:&mut Frame,area:Rect,data:&SystemData) {
     let now=Local::now();
     let line=Line::from(vec![
-        Span::styled("🚀 Termux Monitor",Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled("🚀 TmxMon",Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
         Span::raw("  │  "),Span::styled(now.format("📅 %Y-%m-%d").to_string(),Style::default().fg(Color::Blue)),
         Span::raw("  "),Span::styled(now.format("🕐 %H:%M:%S").to_string(),Style::default().fg(Color::Green)),
         Span::raw("  │  "),Span::styled(format!("⏱ {}",fmt_uptime(data.uptime_secs)),Style::default().fg(Color::Yellow)),

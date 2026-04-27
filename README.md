@@ -1,4 +1,6 @@
-# 🚀 Termux System Monitor (Rust)
+# 🚀 TmxMon
+
+![Demo](./assets/demo.gif)
 
 A fast, modern TUI dashboard for Termux — rewritten in Rust using `ratatui`.
 
@@ -15,19 +17,13 @@ A fast, modern TUI dashboard for Termux — rewritten in Rust using `ratatui`.
 ## Install & Build
 
 ```bash
-# 1. Install Rust in Termux
 pkg install rust
-
-# 2. Clone / copy project files
-# 3. Build & install
-bash install.sh
+pkg install git
+git clone https://github.com/Andrew-Velox/TmxMon.git
+cd TmxMon
+cargo run --release
 ```
 
-Or manually:
-```bash
-cargo build --release
-cp target/release/termux-monitor $PREFIX/bin/
-```
 
 ## Usage
 

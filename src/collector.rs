@@ -12,11 +12,28 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
         sys.refresh_all(); disks.refresh_list(); networks.refresh_list();
         
         // ── CPU & MEMORY ────────────────────────────────────────────────────
-        let cpu_pct = sys.global_cpu_usage();
-        let per_core: Vec<f32> = sys.cpus().iter().map(|c| c.cpu_usage()).collect();
-        let count = sys.cpus().len();
-        let model = sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_default();
-        let freq_mhz: Vec<u64> = sys.cpus().iter().map(|c| c.frequency()).collect();
+        let mut cpu_pct = sys.global_cpu_usage();
+        let mut per_core: Vec<f32> = sys.cpus().iter().map(|c| c.cpu_usage()).collect();
+        let mut count = sys.cpus().len();
+        let mut model = sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_default();
+        let mut freq_mhz: Vec<u64> = sys.cpus().iter().map(|c| c.frequency()).collect();
+
+        // GRACEFUL FALLBACK: If Android blocks sysinfo, scrape the hardware files
+        if count == 0 || freq_mhz.iter().all(|&f| f == 0) {
+            let (termux_count, termux_freqs) = read_termux_cpu_info();
+            if termux_count > 0 {
+                count = termux_count;
+                freq_mhz = termux_freqs;
+                
+                // Keep the UI layout intact by filling the blocked percentages with 0
+                if per_core.is_empty() {
+                    per_core = vec![0.0; count];
+                }
+                if model.is_empty() {
+                    model = "ARM CPU (Hardware Fallback)".into();
+                }
+            }
+        }
         
         let total = sys.total_memory(); let used = sys.used_memory(); let available = sys.available_memory();
         let mem_pct = if total > 0 { used as f32 / total as f32 * 100.0 } else { 0.0 };
@@ -77,15 +94,44 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
 
 // ── TERMUX WRAPPERS ─────────────────────────────────────────────────────────
 
+fn read_termux_cpu_info() -> (usize, Vec<u64>) {
+    let mut freqs = Vec::new();
+    let mut i = 0;
+    loop {
+        let dir = format!("/sys/devices/system/cpu/cpu{}", i);
+        if !std::path::Path::new(&dir).exists() {
+            break;
+        }
+        
+        let cur_freq_path = format!("{}/cpufreq/scaling_cur_freq", dir);
+        let max_freq_path = format!("{}/cpufreq/cpuinfo_max_freq", dir);
+        
+        let mut freq_mhz = 0;
+        
+        if let Ok(contents) = std::fs::read_to_string(&cur_freq_path) {
+            if let Ok(khz) = contents.trim().parse::<u64>() {
+                freq_mhz = khz / 1000;
+            }
+        } else if let Ok(contents) = std::fs::read_to_string(&max_freq_path) {
+            if let Ok(khz) = contents.trim().parse::<u64>() {
+                freq_mhz = khz / 1000;
+            }
+        }
+        
+        freqs.push(freq_mhz);
+        i += 1;
+    }
+    (i, freqs)
+}
+
 fn read_termux_net_io() -> Option<(u64, u64)> {
     let mut total_rx = 0;
     let mut total_tx = 0;
 
-    // Method 1: Direct /proc/net/dev parsing (Fastest, sometimes bypasses sysinfo limits)
+    // Method 1: Direct /proc/net/dev parsing
     if let Ok(contents) = std::fs::read_to_string("/proc/net/dev") {
         for line in contents.lines().skip(2) {
             let line_trimmed = line.trim();
-            // Ignore loopback (localhost) and dummy interfaces so we only get real traffic
             if line_trimmed.starts_with("lo:") || line_trimmed.starts_with("dummy") || line_trimmed.starts_with("tun") { continue; }
             
             let data_str = line.split(':').nth(1).unwrap_or("");
@@ -98,7 +144,7 @@ fn read_termux_net_io() -> Option<(u64, u64)> {
         if total_rx > 0 || total_tx > 0 { return Some((total_tx, total_rx)); }
     }
 
-    // Method 2: 'ip -s link' command
+    // Method 2: 'ip -s link'
     if let Ok(output) = std::process::Command::new("ip").args(["-s", "link"]).output() {
         if let Ok(stdout) = std::str::from_utf8(&output.stdout) {
             let mut lines = stdout.lines();
@@ -119,7 +165,7 @@ fn read_termux_net_io() -> Option<(u64, u64)> {
         if total_rx > 0 || total_tx > 0 { return Some((total_tx, total_rx)); }
     }
 
-    // Method 3: 'ifconfig' command parsing (Scrapes Android toybox format)
+    // Method 3: 'ifconfig' parsing
     if let Ok(output) = std::process::Command::new("ifconfig").output() {
         if let Ok(stdout) = std::str::from_utf8(&output.stdout) {
             for line in stdout.lines() {

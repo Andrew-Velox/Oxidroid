@@ -1,20 +1,94 @@
-use ratatui::{layout::{Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, text::{Line, Span}, widgets::{Block, Borders, Paragraph}, Frame};
+use ratatui::{
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Paragraph},
+    Frame,
+};
 use crate::{types::SystemData, utils::{fmt_bytes, fmt_speed}};
 
 pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     let net = &data.network;
-    let b = Block::default().borders(Borders::ALL).title(Span::styled(" 🌐 Network ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))).border_style(Style::default().fg(Color::Cyan));
-    let inner = b.inner(area); f.render_widget(b, area);
-    let rows = Layout::default().direction(Direction::Vertical).constraints([Constraint::Length(4), Constraint::Min(0)]).split(inner);
-    let speed = vec![
-        Line::from(vec![Span::styled("↑ Upload:   ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)), Span::styled(fmt_speed(net.speed_up), Style::default().fg(Color::Green))]),
-        Line::from(vec![Span::styled("↓ Download: ", Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD)), Span::styled(fmt_speed(net.speed_down), Style::default().fg(Color::Blue))]),
-    ];
-    f.render_widget(Paragraph::new(speed).block(Block::default().title(" Speed").borders(Borders::ALL)), rows[0]);
+
+    let outer = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Plain)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Line::from(vec![
+            Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+            Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
+            Span::styled("NETWORK", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+        ]));
+    let inner = outer.inner(area);
+    f.render_widget(outer, area);
+
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(2), // speed panel
+            Constraint::Length(1), // separator
+            Constraint::Min(0),    // stats
+        ])
+        .split(inner);
+
+    // ── live speed panel ─────────────────────────────────────────────────────
+    // Two-column split: TX left, RX right
+    let speed_cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(rows[0]);
+
+    f.render_widget(
+        Paragraph::new(vec![
+            Line::from(vec![
+                Span::styled("↑ TX", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
+            ]),
+            Line::from(vec![
+                Span::styled(fmt_speed(net.speed_up), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            ]),
+        ]),
+        speed_cols[0],
+    );
+
+    f.render_widget(
+        Paragraph::new(vec![
+            Line::from(vec![
+                Span::styled("↓ RX", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            ]),
+            Line::from(vec![
+                Span::styled(fmt_speed(net.speed_down), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            ]),
+        ]),
+        speed_cols[1],
+    );
+
+    // ── separator ─────────────────────────────────────────────────────────────
+    f.render_widget(
+        Paragraph::new(Line::from(vec![Span::styled(
+            "─".repeat(inner.width as usize),
+            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+        )])),
+        rows[1],
+    );
+
+    // ── stats ─────────────────────────────────────────────────────────────────
+    let key = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+    let val = Style::default().fg(Color::White);
+
     let stats = vec![
-        Line::from(vec![Span::styled("IP (v4):        ", Style::default().fg(Color::Cyan)), Span::raw(&net.ip)]),
-        Line::from(vec![Span::styled("Total Sent:     ", Style::default().fg(Color::Cyan)), Span::raw(fmt_bytes(net.bytes_sent))]),
-        Line::from(vec![Span::styled("Total Received: ", Style::default().fg(Color::Cyan)), Span::raw(fmt_bytes(net.bytes_recv))]),
+        Line::from(vec![
+            Span::styled("IP_V4      ", key),
+            Span::styled(&net.ip, Style::default().fg(Color::Cyan)),
+        ]),
+        Line::from(vec![
+            Span::styled("TOTAL_SENT ", key),
+            Span::styled(fmt_bytes(net.bytes_sent), val),
+        ]),
+        Line::from(vec![
+            Span::styled("TOTAL_RECV ", key),
+            Span::styled(fmt_bytes(net.bytes_recv), val),
+        ]),
     ];
-    f.render_widget(Paragraph::new(stats).block(Block::default().title(" Stats").borders(Borders::TOP)), rows[1]);
+    f.render_widget(Paragraph::new(stats), rows[2]);
 }

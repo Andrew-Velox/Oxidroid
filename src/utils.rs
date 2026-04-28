@@ -26,14 +26,17 @@ pub fn fmt_uptime(s: u64) -> String {
     if d > 0 { format!("{}d {}h {}m", d, h, m) } else if h > 0 { format!("{}h {}m", h, m) } else { format!("{}m", m) }
 }
 
+// Futuristic Color Palette
 pub fn gc(p: f64) -> Color {
-    if p >= 90.0 { Color::Red } else if p >= 70.0 { Color::Yellow } else { Color::Green }
+    if p >= 90.0 { Color::Red } else if p >= 70.0 { Color::Magenta } else { Color::Cyan }
 }
 
+// Sleek, borderless gauge design
+#[allow(dead_code)]
 pub fn gauge<'a>(label: &'a str, pct: f64) -> Gauge<'a> {
     Gauge::default()
-        .block(Block::default().title(Span::styled(label, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))))
-        .gauge_style(Style::default().fg(gc(pct)))
+        .block(Block::default().title(Span::styled(label, Style::default().fg(Color::DarkGray))))
+        .gauge_style(Style::default().fg(gc(pct)).bg(Color::DarkGray))
         .percent(pct.clamp(0.0, 100.0) as u16)
-        .label(format!("{:.1}%", pct))
+        .label(Span::styled(format!("{:.1}%", pct), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)))
 }

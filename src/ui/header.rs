@@ -3,27 +3,124 @@ use ratatui::{
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
     Frame,
 };
 use crate::{app::Tab, types::SystemData, utils::fmt_uptime};
 
+// ── Palette ────────────────────────────────────────────────────────────────────
+// Accent:   Cyan  (#00ffff  → Color::Cyan)
+// Hot:      Magenta (#ff00ff → Color::Magenta)
+// Dim:      Dark grey for secondary chrome
+// Inactive: Near-invisible sidebar items
+// Neutral:  White for readable data values
+// ──────────────────────────────────────────────────────────────────────────────
+
 pub fn render_header(f: &mut Frame, area: Rect, data: &SystemData) {
     let now = Local::now();
+
+    // ◈ TMXMON  ·  2025.04.28  [14:32:07]  ·  UP 03d 07h 41m  ·  ↑↓ NAV  Q EXIT
     let line = Line::from(vec![
-        Span::styled("🚀 TmxMon", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-        Span::raw("  │  "), Span::styled(now.format("📅 %Y-%m-%d").to_string(), Style::default().fg(Color::Blue)),
-        Span::raw("  "), Span::styled(now.format("🕐 %H:%M:%S").to_string(), Style::default().fg(Color::Green)),
-        Span::raw("  │  "), Span::styled(format!("⏱ {}", fmt_uptime(data.uptime_secs)), Style::default().fg(Color::Yellow)),
-        Span::raw("  │  "), Span::styled("↑↓:tabs  q:quit", Style::default().fg(Color::DarkGray)),
+        // Logo glyph + name
+        Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
+        Span::styled("TMXMON", Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD)),
+        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+
+        // Date
+        Span::styled(
+            now.format("%Y.%m.%d").to_string(),
+            Style::default().fg(Color::White).add_modifier(Modifier::DIM),
+        ),
+        Span::styled("  ", Style::default()),
+
+        // Time in brackets, cyan hot
+        Span::styled("[", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            now.format("%H:%M:%S").to_string(),
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("]", Style::default().fg(Color::DarkGray)),
+
+        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+
+        // Uptime — magenta accent
+        Span::styled("UP ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+        Span::styled(
+            fmt_uptime(data.uptime_secs),
+            Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
+        ),
+
+        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+
+        // Key hints — barely visible
+        Span::styled(
+            "↑↓ NAV",
+            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+        ),
+        Span::styled("  ", Style::default()),
+        Span::styled(
+            "[Q]",
+            Style::default().fg(Color::DarkGray),
+        ),
+        Span::styled(
+            " EXIT",
+            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+        ),
     ]);
-    f.render_widget(Paragraph::new(line).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Cyan))).alignment(Alignment::Center), area);
+
+    // Thin bottom border using the double-line border type for a hi-tech feel
+    let block = Block::default()
+        .borders(Borders::BOTTOM)
+        .border_type(BorderType::Plain)   // single line, clean
+        .border_style(Style::default().fg(Color::Cyan));
+
+    f.render_widget(
+        Paragraph::new(line)
+            .block(block)
+            .alignment(Alignment::Left),
+        area,
+    );
 }
 
 pub fn render_sidebar(f: &mut Frame, area: Rect, current: Tab) {
     let items: Vec<ListItem> = Tab::ALL.iter().map(|&t| {
-        let s = format!("  {}", t.label());
-        if t == current { ListItem::new(s).style(Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)) } else { ListItem::new(s).style(Style::default().fg(Color::DarkGray)) }
+        let label = t.label().to_uppercase();
+
+        if t == current {
+            // Active: glowing selection with bracket frame and cyan text
+            // ▸ OVERVIEW
+            let line = Line::from(vec![
+                Span::styled("▸ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    label,
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]);
+            ListItem::new(line)
+        } else {
+            // Inactive: recessed, dim — creates strong contrast with active
+            let line = Line::from(vec![
+                Span::styled("  ", Style::default()),
+                Span::styled(
+                    label,
+                    Style::default()
+                        .fg(Color::DarkGray)
+                        .add_modifier(Modifier::DIM),
+                ),
+            ]);
+            ListItem::new(line)
+        }
     }).collect();
-    f.render_widget(List::new(items).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Blue)).title("Tabs")), area);
+
+    // Right border — single line, muted cyan so it reads as structural chrome
+    let block = Block::default()
+        .borders(Borders::RIGHT)
+        .border_type(BorderType::Plain)
+        .border_style(Style::default().fg(Color::DarkGray));
+
+    f.render_widget(List::new(items).block(block), area);
 }

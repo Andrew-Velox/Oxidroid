@@ -1,14 +1,20 @@
-use ratatui::{layout::{Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, text::{Line, Span}, widgets::{Block, Borders, Paragraph, Row, Table}, Frame};
+use ratatui::{layout::{Constraint, Direction, Layout, Rect}, style::{Color, Modifier, Style}, text::{Line, Span}, widgets::{Block, BorderType, Borders, Paragraph, Row, Table}, Frame};
 use crate::settings::Settings;
 
 pub fn render(f: &mut Frame, area: Rect, s: &Settings) {
-    let border_color = if s.focused { Color::Yellow } else { Color::Cyan };
     let b = Block::default()
         .borders(Borders::ALL)
-        .title(Span::styled(" ⚙️  Settings ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)))
-        .border_style(Style::default().fg(border_color));
-    
-    let inner = b.inner(area); f.render_widget(b, area);
+        .border_type(BorderType::Plain)
+        .border_style(Style::default().fg(Color::White))
+        .title(Line::from(vec![
+            Span::styled("─── ", Style::default().fg(Color::White)),
+            Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
+            Span::styled("SETTINGS", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            Span::styled(" ───", Style::default().fg(Color::White)),
+        ]));
+
+    let inner = b.inner(area);
+    f.render_widget(b, area);
     let parts = Layout::default().direction(Direction::Vertical).constraints([Constraint::Min(0), Constraint::Length(2)]).split(inner);
     let entries = [("Refresh Rate", format!("{} ms", s.refresh_ms)), ("Battery Capacity", format!("{} mAh", s.battery_mah))];
     
@@ -29,11 +35,17 @@ pub fn render(f: &mut Frame, area: Rect, s: &Settings) {
         ]).style(style)
     }).collect();
     
-    f.render_widget(Table::new(rows, [Constraint::Length(2), Constraint::Length(25), Constraint::Min(20)]).header(Row::new(["", "Setting", "Value"]).style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD)).bottom_margin(1)), parts[0]);
+    let header = Row::new(["", "Setting", "Value"]).style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD)).bottom_margin(1);
+    f.render_widget(Table::new(rows, [Constraint::Length(2), Constraint::Length(25), Constraint::Min(20)]).header(header), parts[0]);
     
     // Update instructions dynamically
     let instruction_text = if s.focused {
-        vec![Span::styled("↑↓:Navigate  ", Style::default().fg(Color::White)), Span::styled("←→:Adjust  ", Style::default().fg(Color::White)), Span::styled("r:Reset  ", Style::default().fg(Color::Yellow)), Span::styled("Esc:Back", Style::default().fg(Color::Red))]
+        vec![
+            Span::styled("↑↓:Navigate  ", Style::default().fg(Color::White)),
+            Span::styled("←→:Adjust  ", Style::default().fg(Color::White)),
+            Span::styled("r:Reset  ", Style::default().fg(Color::Yellow)),
+            Span::styled("Esc:Back", Style::default().fg(Color::Red)),
+        ]
     } else {
         vec![Span::styled("Enter: Edit Settings", Style::default().fg(Color::White))]
     };

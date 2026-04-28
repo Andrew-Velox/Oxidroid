@@ -74,7 +74,14 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
         let mut procs: Vec<ProcessInfo> = sys.processes().values().map(|p: &Process| ProcessInfo { pid: p.pid().as_u32(), name: p.name().to_string_lossy().into_owned(), cpu: p.cpu_usage(), mem: p.memory() as f32 / total as f32 * 100.0, status: format!("{:?}", p.status()) }).collect();
         procs.sort_by(|a, b| b.cpu.partial_cmp(&a.cpu).unwrap_or(std::cmp::Ordering::Equal)); procs.truncate(20);
         
-        let uptime_secs = System::uptime();
+        // GRACEFUL FALLBACK: Uptime
+        let mut uptime_secs = System::uptime();
+        if uptime_secs == 0 {
+            if let Some(termux_uptime) = read_termux_uptime() {
+                uptime_secs = termux_uptime;
+            }
+        }
+        
         let battery = read_battery();
         let device = read_device_info();
         
@@ -275,3 +282,13 @@ fn read_device_info() -> DeviceInfo {
 }
 
 
+fn read_termux_uptime() -> Option<u64> {
+    if let Ok(contents) = std::fs::read_to_string("/proc/uptime") {
+        if let Some(uptime_str) = contents.split_whitespace().next() {
+            if let Ok(uptime_f64) = uptime_str.parse::<f64>() {
+                return Some(uptime_f64 as u64);
+            }
+        }
+    }
+    None
+}

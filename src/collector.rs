@@ -78,32 +78,74 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
 // ── TERMUX WRAPPERS ─────────────────────────────────────────────────────────
 
 fn read_termux_net_io() -> Option<(u64, u64)> {
-    let output = std::process::Command::new("ifconfig").output().ok()?;
-    if !output.status.success() { return None; }
-    
-    let stdout = std::str::from_utf8(&output.stdout).ok()?;
     let mut total_rx = 0;
     let mut total_tx = 0;
 
-    for line in stdout.lines() {
-        if let Some(rx_idx) = line.find("RX bytes:") {
-            let rest = &line[rx_idx + 9..];
-            let end = rest.find(' ').unwrap_or(rest.len());
-            if let Ok(val) = rest[..end].parse::<u64>() {
-                total_rx += val;
+    // Method 1: Direct /proc/net/dev parsing (Fastest, sometimes bypasses sysinfo limits)
+    if let Ok(contents) = std::fs::read_to_string("/proc/net/dev") {
+        for line in contents.lines().skip(2) {
+            let line_trimmed = line.trim();
+            // Ignore loopback (localhost) and dummy interfaces so we only get real traffic
+            if line_trimmed.starts_with("lo:") || line_trimmed.starts_with("dummy") || line_trimmed.starts_with("tun") { continue; }
+            
+            let data_str = line.split(':').nth(1).unwrap_or("");
+            let data_parts: Vec<&str> = data_str.split_whitespace().collect();
+            if data_parts.len() >= 8 {
+                total_rx += data_parts[0].parse::<u64>().unwrap_or(0);
+                total_tx += data_parts[8].parse::<u64>().unwrap_or(0);
             }
         }
-        if let Some(tx_idx) = line.find("TX bytes:") {
-            let rest = &line[tx_idx + 9..];
-            let end = rest.find(' ').unwrap_or(rest.len());
-            if let Ok(val) = rest[..end].parse::<u64>() {
-                total_tx += val;
+        if total_rx > 0 || total_tx > 0 { return Some((total_tx, total_rx)); }
+    }
+
+    // Method 2: 'ip -s link' command
+    if let Ok(output) = std::process::Command::new("ip").args(["-s", "link"]).output() {
+        if let Ok(stdout) = std::str::from_utf8(&output.stdout) {
+            let mut lines = stdout.lines();
+            while let Some(line) = lines.next() {
+                if line.contains("RX: ") {
+                    if let Some(next_line) = lines.next() {
+                        let parts: Vec<&str> = next_line.split_whitespace().collect();
+                        if !parts.is_empty() { total_rx += parts[0].parse::<u64>().unwrap_or(0); }
+                    }
+                } else if line.contains("TX: ") {
+                    if let Some(next_line) = lines.next() {
+                        let parts: Vec<&str> = next_line.split_whitespace().collect();
+                        if !parts.is_empty() { total_tx += parts[0].parse::<u64>().unwrap_or(0); }
+                    }
+                }
+            }
+        }
+        if total_rx > 0 || total_tx > 0 { return Some((total_tx, total_rx)); }
+    }
+
+    // Method 3: 'ifconfig' command parsing (Scrapes Android toybox format)
+    if let Ok(output) = std::process::Command::new("ifconfig").output() {
+        if let Ok(stdout) = std::str::from_utf8(&output.stdout) {
+            for line in stdout.lines() {
+                let lower = line.to_lowercase();
+                if lower.contains("rx bytes") {
+                    let parts: Vec<&str> = lower.split("rx bytes").collect();
+                    if parts.len() > 1 {
+                        let num_str = parts[1].trim_start_matches(':').trim_start();
+                        let end = num_str.find(' ').unwrap_or(num_str.len());
+                        total_rx += num_str[..end].parse::<u64>().unwrap_or(0);
+                    }
+                }
+                if lower.contains("tx bytes") {
+                    let parts: Vec<&str> = lower.split("tx bytes").collect();
+                    if parts.len() > 1 {
+                        let num_str = parts[1].trim_start_matches(':').trim_start();
+                        let end = num_str.find(' ').unwrap_or(num_str.len());
+                        total_tx += num_str[..end].parse::<u64>().unwrap_or(0);
+                    }
+                }
             }
         }
     }
 
     if total_rx > 0 || total_tx > 0 {
-        Some((total_tx, total_rx)) 
+        Some((total_tx, total_rx))
     } else {
         None
     }

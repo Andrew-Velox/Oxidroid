@@ -10,6 +10,7 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
     
     loop {
         sys.refresh_all(); disks.refresh_list(); networks.refresh_list();
+        
         let cpu_pct = sys.global_cpu_usage();
         let per_core: Vec<f32> = sys.cpus().iter().map(|c| c.cpu_usage()).collect();
         let count = sys.cpus().len();
@@ -32,7 +33,15 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
         let speed_down = if elapsed > 0.0 { (tr.saturating_sub(last_recv)) as f64 / elapsed } else { 0.0 };
         last_sent = ts; last_recv = tr; last_t = now;
         
-        let ip = networks.iter().flat_map(|(_, n)| n.ip_networks()).find(|ip| !ip.addr.is_loopback() && ip.addr.is_ipv4()).map(|ip| ip.addr.to_string()).unwrap_or_else(|| "N/A".into());
+        // ── IP Fallback Logic ──────────────────────────────────────────────
+        let ip = read_termux_network().unwrap_or_else(|| {
+            networks.iter()
+                .flat_map(|(_, n)| n.ip_networks())
+                .find(|ip| !ip.addr.is_loopback() && ip.addr.is_ipv4())
+                .map(|ip| ip.addr.to_string())
+                .unwrap_or_else(|| "N/A".into())
+        });
+        
         let mut procs: Vec<ProcessInfo> = sys.processes().values().map(|p: &Process| ProcessInfo { pid: p.pid().as_u32(), name: p.name().to_string_lossy().into_owned(), cpu: p.cpu_usage(), mem: p.memory() as f32 / total as f32 * 100.0, status: format!("{:?}", p.status()) }).collect();
         procs.sort_by(|a, b| b.cpu.partial_cmp(&a.cpu).unwrap_or(std::cmp::Ordering::Equal)); procs.truncate(20);
         
@@ -80,4 +89,28 @@ fn read_device_info() -> DeviceInfo {
     let gp = |k: &str| std::process::Command::new("getprop").arg(k).output().ok().and_then(|o| String::from_utf8(o.stdout).ok()).unwrap_or_default().trim().to_string();
     let uname = std::process::Command::new("uname").arg("-r").output().ok().and_then(|o| String::from_utf8(o.stdout).ok()).unwrap_or_default().trim().to_string();
     DeviceInfo { model: gp("ro.product.model"), android: gp("ro.build.version.release"), arch: gp("ro.product.cpu.abi"), manufacturer: gp("ro.product.manufacturer"), kernel: uname }
+}
+
+// ── New Helper Function for Termux Wi-Fi ─────────────────────────────
+fn read_termux_network() -> Option<String> {
+    // Attempt to run the Termux API command. Fails silently if not installed/not on Termux.
+    let output = std::process::Command::new("termux-wifi-connectioninfo")
+        .output()
+        .ok()?; 
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = std::str::from_utf8(&output.stdout).ok()?;
+    
+    // Quick extraction of the "ip" field from the JSON output
+    let ip_key = "\"ip\": \"";
+    if let Some(start) = stdout.find(ip_key) {
+        let rest = &stdout[start + ip_key.len()..];
+        if let Some(end) = rest.find('\"') {
+            return Some(rest[..end].to_string());
+        }
+    }
+    None
 }

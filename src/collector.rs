@@ -283,12 +283,53 @@ fn read_device_info() -> DeviceInfo {
 
 
 fn read_termux_uptime() -> Option<u64> {
-    if let Ok(contents) = std::fs::read_to_string("/proc/uptime") {
-        if let Some(uptime_str) = contents.split_whitespace().next() {
-            if let Ok(uptime_f64) = uptime_str.parse::<f64>() {
-                return Some(uptime_f64 as u64);
+    // Run the native uptime command
+    let output = std::process::Command::new("uptime").output().ok()?;
+    let stdout = std::str::from_utf8(&output.stdout).ok()?;
+    
+    // Example outputs we have to parse:
+    // " 15:42:10 up 3 days, 12:34,  0 users..."
+    // " 15:42:10 up 12:34,  0 users..."
+    // " 15:42:10 up 45 min,  0 users..."
+    
+    let up_idx = stdout.find("up ")?;
+    let users_idx = stdout.find(" user")?;
+    if users_idx < up_idx { return None; }
+    
+    // Extract everything between "up " and the number of users
+    let mut up_str = &stdout[up_idx + 3 .. users_idx];
+    if let Some(last_comma) = up_str.rfind(',') {
+        up_str = &up_str[..last_comma];
+    }
+    
+    let mut days = 0;
+    let mut hours = 0;
+    let mut mins = 0;
+    
+    // Parse the pieces (days, hours, minutes)
+    for part in up_str.split(',') {
+        let part = part.trim();
+        if part.contains("day") {
+            if let Some(d) = part.split_whitespace().next() {
+                days = d.parse::<u64>().unwrap_or(0);
+            }
+        } else if part.contains("min") {
+            if let Some(m) = part.split_whitespace().next() {
+                mins = m.parse::<u64>().unwrap_or(0);
+            }
+        } else if part.contains(':') {
+            let time_parts: Vec<&str> = part.split(':').collect();
+            if time_parts.len() == 2 {
+                hours = time_parts[0].parse::<u64>().unwrap_or(0);
+                mins = time_parts[1].parse::<u64>().unwrap_or(0);
+            } else if time_parts.len() == 3 {
+                hours = time_parts[0].parse::<u64>().unwrap_or(0);
+                mins = time_parts[1].parse::<u64>().unwrap_or(0);
             }
         }
     }
-    None
+    
+    // Convert everything to seconds
+    let total_secs = (days * 86400) + (hours * 3600) + (mins * 60);
+    if total_secs > 0 { Some(total_secs) } else { None }
 }

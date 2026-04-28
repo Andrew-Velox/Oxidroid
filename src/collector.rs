@@ -283,53 +283,81 @@ fn read_device_info() -> DeviceInfo {
 
 
 fn read_termux_uptime() -> Option<u64> {
-    // Run the native uptime command
     let output = std::process::Command::new("uptime").output().ok()?;
     let stdout = std::str::from_utf8(&output.stdout).ok()?;
     
-    // Example outputs we have to parse:
-    // " 15:42:10 up 3 days, 12:34,  0 users..."
-    // " 15:42:10 up 12:34,  0 users..."
-    // " 15:42:10 up 45 min,  0 users..."
-    
-    let up_idx = stdout.find("up ")?;
-    let users_idx = stdout.find(" user")?;
-    if users_idx < up_idx { return None; }
-    
-    // Extract everything between "up " and the number of users
-    let mut up_str = &stdout[up_idx + 3 .. users_idx];
-    if let Some(last_comma) = up_str.rfind(',') {
-        up_str = &up_str[..last_comma];
-    }
-    
-    let mut days = 0;
-    let mut hours = 0;
-    let mut mins = 0;
-    
-    // Parse the pieces (days, hours, minutes)
-    for part in up_str.split(',') {
-        let part = part.trim();
-        if part.contains("day") {
-            if let Some(d) = part.split_whitespace().next() {
-                days = d.parse::<u64>().unwrap_or(0);
-            }
-        } else if part.contains("min") {
-            if let Some(m) = part.split_whitespace().next() {
-                mins = m.parse::<u64>().unwrap_or(0);
-            }
-        } else if part.contains(':') {
-            let time_parts: Vec<&str> = part.split(':').collect();
-            if time_parts.len() == 2 {
-                hours = time_parts[0].parse::<u64>().unwrap_or(0);
-                mins = time_parts[1].parse::<u64>().unwrap_or(0);
-            } else if time_parts.len() == 3 {
-                hours = time_parts[0].parse::<u64>().unwrap_or(0);
-                mins = time_parts[1].parse::<u64>().unwrap_or(0);
+    // 1. Try Toybox format (Default on Android/Termux)
+    // Format: "up time: 1 days, 00:09:26, idle time: 00:07:15..."
+    if let Some(idx) = stdout.find("up time:") {
+        let rest = &stdout[idx + 8..];
+        let end_idx = rest.find(", idle").unwrap_or(rest.len());
+        let up_str = rest[..end_idx].trim();
+        
+        let mut days = 0;
+        let mut hours = 0;
+        let mut mins = 0;
+        let mut secs = 0;
+        
+        for part in up_str.split(',') {
+            let p = part.trim();
+            if p.contains("day") {
+                if let Some(d) = p.split_whitespace().next() {
+                    days = d.parse::<u64>().unwrap_or(0);
+                }
+            } else if p.contains(':') {
+                let parts: Vec<&str> = p.split(':').collect();
+                if parts.len() == 3 {
+                    hours = parts[0].parse::<u64>().unwrap_or(0);
+                    mins = parts[1].parse::<u64>().unwrap_or(0);
+                    secs = parts[2].parse::<u64>().unwrap_or(0);
+                } else if parts.len() == 2 {
+                    hours = parts[0].parse::<u64>().unwrap_or(0);
+                    mins = parts[1].parse::<u64>().unwrap_or(0);
+                }
             }
         }
+        let total = (days * 86400) + (hours * 3600) + (mins * 60) + secs;
+        if total > 0 { return Some(total); }
     }
     
-    // Convert everything to seconds
-    let total_secs = (days * 86400) + (hours * 3600) + (mins * 60);
-    if total_secs > 0 { Some(total_secs) } else { None }
+    // 2. Try Coreutils format (Linux/PC)
+    // Format: " 15:42:10 up 3 days, 12:34,  0 users..."
+    if let Some(up_idx) = stdout.find("up ") {
+        let rest = &stdout[up_idx + 3..];
+        let end_idx = rest.find("user").unwrap_or(rest.len());
+        let mut up_str = rest[..end_idx].trim();
+        if let Some(last_comma) = up_str.rfind(',') {
+            up_str = up_str[..last_comma].trim();
+        }
+        
+        let mut days = 0;
+        let mut hours = 0;
+        let mut mins = 0;
+        
+        for part in up_str.split(',') {
+            let p = part.trim();
+            if p.contains("day") {
+                if let Some(d) = p.split_whitespace().next() {
+                    days = d.parse::<u64>().unwrap_or(0);
+                }
+            } else if p.contains("min") {
+                if let Some(m) = p.split_whitespace().next() {
+                    mins = m.parse::<u64>().unwrap_or(0);
+                }
+            } else if p.contains(':') {
+                let parts: Vec<&str> = p.split(':').collect();
+                if parts.len() == 2 {
+                    hours = parts[0].parse::<u64>().unwrap_or(0);
+                    mins = parts[1].parse::<u64>().unwrap_or(0);
+                } else if parts.len() == 3 {
+                    hours = parts[0].parse::<u64>().unwrap_or(0);
+                    mins = parts[1].parse::<u64>().unwrap_or(0);
+                }
+            }
+        }
+        let total = (days * 86400) + (hours * 3600) + (mins * 60);
+        if total > 0 { return Some(total); }
+    }
+    
+    None
 }

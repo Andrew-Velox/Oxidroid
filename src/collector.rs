@@ -12,7 +12,7 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
         sys.refresh_all(); disks.refresh_list(); networks.refresh_list();
         
         // ── CPU & MEMORY ────────────────────────────────────────────────────
-        let mut cpu_pct = sys.global_cpu_usage();
+        let cpu_pct = sys.global_cpu_usage();
         let mut per_core: Vec<f32> = sys.cpus().iter().map(|c| c.cpu_usage()).collect();
         let mut count = sys.cpus().len();
         let mut model = sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_default();
@@ -240,7 +240,38 @@ fn read_battery() -> BatteryData {
 }
 
 fn read_device_info() -> DeviceInfo {
+    // 1. Try to read Android specific properties first
     let gp = |k: &str| std::process::Command::new("getprop").arg(k).output().ok().and_then(|o| String::from_utf8(o.stdout).ok()).unwrap_or_default().trim().to_string();
-    let uname = std::process::Command::new("uname").arg("-r").output().ok().and_then(|o| String::from_utf8(o.stdout).ok()).unwrap_or_default().trim().to_string();
-    DeviceInfo { model: gp("ro.product.model"), android: gp("ro.build.version.release"), arch: gp("ro.product.cpu.abi"), manufacturer: gp("ro.product.manufacturer"), kernel: uname }
+    
+    let manufacturer = gp("ro.product.manufacturer");
+    let model = gp("ro.product.model");
+    
+    // If we got a manufacturer or model, we are successfully running on Android/Termux
+    if !manufacturer.is_empty() || !model.is_empty() {
+        let uname = std::process::Command::new("uname").arg("-r").output().ok().and_then(|o| String::from_utf8(o.stdout).ok()).unwrap_or_default().trim().to_string();
+        return DeviceInfo { 
+            model, 
+            android: gp("ro.build.version.release"), 
+            arch: gp("ro.product.cpu.abi"), 
+            manufacturer, 
+            kernel: uname 
+        };
+    }
+    
+    // 2. GRACEFUL FALLBACK: We are on Windows, Linux, or macOS
+    let os_name = sysinfo::System::name().unwrap_or_else(|| "Unknown".into());
+    let os_ver = sysinfo::System::os_version().unwrap_or_default();
+    
+    DeviceInfo {
+        // Map the PC Hostname (e.g., "MOHABBAT-PC") to the manufacturer field
+        manufacturer: sysinfo::System::host_name().unwrap_or_else(|| "Localhost".into()),
+        model: String::new(),
+        // Map the OS Name and Version (e.g., "Windows 11") to the android field
+        android: format!("{} {}", os_name, os_ver).trim().to_string(), 
+        // Use Rust's built-in target arch (e.g., "x86_64")
+        arch: std::env::consts::ARCH.to_string(), 
+        kernel: sysinfo::System::kernel_version().unwrap_or_default(),
+    }
 }
+
+

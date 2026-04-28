@@ -13,12 +13,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData, ex: &mut FileExplore
         let outer = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Plain)
-            .border_style(Style::default().fg(Color::DarkGray))
+            .border_style(Style::default().fg(Color::White))
             .title(Line::from(vec![
-                Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+                Span::styled("─── ", Style::default().fg(Color::White)),
                 Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
                 Span::styled("STORAGE", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-                Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+                Span::styled(" ───", Style::default().fg(Color::White)),
             ]));
         let inner = outer.inner(area);
         f.render_widget(outer, area);
@@ -39,8 +39,8 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData, ex: &mut FileExplore
         let dots = "·".repeat((inner.width as usize).saturating_sub("DISK_USAGE".len() + pct_str.len() + 2));
         f.render_widget(
             Paragraph::new(Line::from(vec![
-                Span::styled("DISK_USAGE", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
-                Span::styled(dots, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+                Span::styled("DISK_USAGE", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+                Span::styled(dots, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
                 Span::styled(pct_str, Style::default().fg(color).add_modifier(Modifier::BOLD)),
             ])),
             rows[0],
@@ -59,12 +59,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData, ex: &mut FileExplore
         f.render_widget(
             Paragraph::new(Line::from(vec![Span::styled(
                 "─".repeat(inner.width as usize),
-                Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+                Style::default().fg(Color::White).add_modifier(Modifier::DIM),
             )])),
             rows[1],
         );
 
-        let key = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+        let key = Style::default().fg(Color::White).add_modifier(Modifier::DIM);
         let val = Style::default().fg(Color::White);
         let stats = vec![
             Line::from(vec![Span::styled("TOTAL   ", key), Span::styled(fmt_bytes(data.storage.total), val)]),
@@ -72,8 +72,8 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData, ex: &mut FileExplore
             Line::from(vec![Span::styled("FREE    ", key), Span::styled(fmt_bytes(data.storage.free), val)]),
             Line::from(vec![
                 Span::styled("        ", key),
-                Span::styled("[ENTER]", Style::default().fg(Color::DarkGray)),
-                Span::styled(" file explorer", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+                Span::styled("[ENTER]", Style::default().fg(Color::White)),
+                Span::styled(" file explorer", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
             ]),
         ];
         f.render_widget(Paragraph::new(stats), rows[2]);
@@ -82,12 +82,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData, ex: &mut FileExplore
         let outer = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Plain)
-            .border_style(Style::default().fg(Color::DarkGray))
+            .border_style(Style::default().fg(Color::White))
             .title(Line::from(vec![
-                Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+                Span::styled("─── ", Style::default().fg(Color::White)),
                 Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
                 Span::styled("FILE_EXPLORER", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-                Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+                Span::styled(" ───", Style::default().fg(Color::White)),
             ]));
         let inner = outer.inner(area);
         f.render_widget(outer, area);
@@ -126,19 +126,19 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData, ex: &mut FileExplore
                 ListItem::new(Line::from(vec![
                     Span::styled("▸ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
                     Span::styled(&e.name, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-                    Span::styled(sz, Style::default().fg(Color::DarkGray)),
+                    Span::styled(sz, Style::default().fg(Color::White)),
                 ]))
             } else if e.is_dir {
                 ListItem::new(Line::from(vec![
                     Span::styled("  ", Style::default()),
                     Span::styled(&e.name, Style::default().fg(Color::White)),
-                    Span::styled(sz, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+                    Span::styled(sz, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
                 ]))
             } else {
                 ListItem::new(Line::from(vec![
                     Span::styled("  ", Style::default()),
-                    Span::styled(&e.name, Style::default().fg(Color::DarkGray)),
-                    Span::styled(sz, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+                    Span::styled(&e.name, Style::default().fg(Color::White)),
+                    Span::styled(sz, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
                 ]))
             }
         }).collect();
@@ -148,12 +148,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData, ex: &mut FileExplore
         // keybind strip
         f.render_widget(
             Paragraph::new(Line::from(vec![
-                Span::styled("↑↓", Style::default().fg(Color::DarkGray)),
-                Span::styled(" NAV  ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
-                Span::styled("[ENTER]", Style::default().fg(Color::DarkGray)),
-                Span::styled(" OPEN  ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
-                Span::styled("[ESC]", Style::default().fg(Color::DarkGray)),
-                Span::styled(" BACK", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+                Span::styled("↑↓", Style::default().fg(Color::White)),
+                Span::styled(" NAV  ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+                Span::styled("[ENTER]", Style::default().fg(Color::White)),
+                Span::styled(" OPEN  ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+                Span::styled("[ESC]", Style::default().fg(Color::White)),
+                Span::styled(" BACK", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
             ])),
             rows[2],
         );

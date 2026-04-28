@@ -13,12 +13,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     let outer = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
-        .border_style(Style::default().fg(Color::DarkGray))
+        .border_style(Style::default().fg(Color::White))
         .title(Line::from(vec![
-            Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+            Span::styled("─── ", Style::default().fg(Color::White)),
             Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
             Span::styled("BATTERY", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-            Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+            Span::styled(" ───", Style::default().fg(Color::White)),
         ]));
     let inner = outer.inner(area);
     f.render_widget(outer, area);
@@ -41,8 +41,8 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
 
     f.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::styled("CHARGE", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
-            Span::styled(dots, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+            Span::styled("CHARGE", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+            Span::styled(dots, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
             Span::styled(pct_str, Style::default().fg(color).add_modifier(Modifier::BOLD)),
         ])),
         rows[0],
@@ -62,13 +62,13 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     f.render_widget(
         Paragraph::new(Line::from(vec![Span::styled(
             "─".repeat(inner.width as usize),
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+            Style::default().fg(Color::White).add_modifier(Modifier::DIM),
         )])),
         rows[1],
     );
 
     // ── details ───────────────────────────────────────────────────────────────
-    let key = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+    let key = Style::default().fg(Color::White).add_modifier(Modifier::DIM);
     let val = Style::default().fg(Color::White);
 
     // Status gets an accent colour depending on state
@@ -90,7 +90,7 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
         Line::from(vec![
             Span::styled("TEMPERATURE ", key),
             Span::styled(format!("{:.1}", bat.temperature), Style::default().fg(Color::Cyan)),
-            Span::styled(" °C", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+            Span::styled(" °C", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         ]),
         Line::from(vec![
             Span::styled("PLUGGED     ", key),
@@ -99,7 +99,7 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
         Line::from(vec![
             Span::styled("CURRENT     ", key),
             Span::styled(format!("{}", bat.current_ua), Style::default().fg(Color::Cyan)),
-            Span::styled(" µA", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+            Span::styled(" µA", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         ]),
     ];
     f.render_widget(Paragraph::new(lines), rows[2]);

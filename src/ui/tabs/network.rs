@@ -13,12 +13,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     let outer = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
-        .border_style(Style::default().fg(Color::DarkGray))
+        .border_style(Style::default().fg(Color::White))
         .title(Line::from(vec![
-            Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+            Span::styled("─── ", Style::default().fg(Color::White)),
             Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
             Span::styled("NETWORK", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-            Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+            Span::styled(" ───", Style::default().fg(Color::White)),
         ]));
     let inner = outer.inner(area);
     f.render_widget(outer, area);
@@ -67,13 +67,13 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     f.render_widget(
         Paragraph::new(Line::from(vec![Span::styled(
             "─".repeat(inner.width as usize),
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+            Style::default().fg(Color::White).add_modifier(Modifier::DIM),
         )])),
         rows[1],
     );
 
     // ── stats ─────────────────────────────────────────────────────────────────
-    let key = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+    let key = Style::default().fg(Color::White).add_modifier(Modifier::DIM);
     let val = Style::default().fg(Color::White);
 
     let stats = vec![

@@ -20,8 +20,8 @@ fn render_metric(f: &mut Frame, area: Rect, label: &str, value: f64) {
 
     f.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::styled(label, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
-            Span::styled(dots, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+            Span::styled(label, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+            Span::styled(dots, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
             Span::styled(pct_str, Style::default().fg(color).add_modifier(Modifier::BOLD)),
         ])),
         rows[0],
@@ -39,12 +39,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     let outer = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
-        .border_style(Style::default().fg(Color::DarkGray))
+        .border_style(Style::default().fg(Color::White))
         .title(Line::from(vec![
-            Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+            Span::styled("─── ", Style::default().fg(Color::White)),
             Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
             Span::styled("MEMORY", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-            Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+            Span::styled(" ───", Style::default().fg(Color::White)),
         ]));
     let inner = outer.inner(area);
     f.render_widget(outer, area);
@@ -66,12 +66,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     f.render_widget(
         Paragraph::new(Line::from(vec![Span::styled(
             "─".repeat(inner.width as usize),
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+            Style::default().fg(Color::White).add_modifier(Modifier::DIM),
         )])),
         rows[3],
     );
 
-    let key = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+    let key = Style::default().fg(Color::White).add_modifier(Modifier::DIM);
     let val = Style::default().fg(Color::White);
     let stats = vec![
         Line::from(vec![Span::styled("TOTAL      ", key), Span::styled(fmt_bytes(data.memory.total), val)]),
@@ -80,7 +80,7 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
         Line::from(vec![
             Span::styled("SWAP       ", key),
             Span::styled(fmt_bytes(data.memory.swap_used), Style::default().fg(Color::Cyan)),
-            Span::styled("  /  ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+            Span::styled("  /  ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
             Span::styled(fmt_bytes(data.memory.swap_total), val),
         ]),
     ];

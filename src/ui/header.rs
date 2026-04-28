@@ -26,47 +26,47 @@ pub fn render_header(f: &mut Frame, area: Rect, data: &SystemData) {
         Span::styled("TMXMON", Style::default()
             .fg(Color::Cyan)
             .add_modifier(Modifier::BOLD)),
-        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+        Span::styled("  ·  ", Style::default().fg(Color::White)),
 
         // Date
         Span::styled(
-            now.format("%Y.%m.%d").to_string(),
+            now.format("%d.%m.%Y").to_string(),
             Style::default().fg(Color::White).add_modifier(Modifier::DIM),
         ),
         Span::styled("  ", Style::default()),
 
         // Time in brackets, cyan hot
-        Span::styled("[", Style::default().fg(Color::DarkGray)),
+        Span::styled("[", Style::default().fg(Color::White)),
         Span::styled(
             now.format("%H:%M:%S").to_string(),
             Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
         ),
-        Span::styled("]", Style::default().fg(Color::DarkGray)),
+        Span::styled("]", Style::default().fg(Color::White)),
 
-        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+        Span::styled("  ·  ", Style::default().fg(Color::White)),
 
         // Uptime — magenta accent
-        Span::styled("UP ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+        Span::styled("UP ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         Span::styled(
             fmt_uptime(data.uptime_secs),
             Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
         ),
 
-        Span::styled("  ·  ", Style::default().fg(Color::DarkGray)),
+        Span::styled("  ·  ", Style::default().fg(Color::White)),
 
         // Key hints — barely visible
         Span::styled(
             "↑↓ NAV",
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+            Style::default().fg(Color::White).add_modifier(Modifier::DIM),
         ),
         Span::styled("  ", Style::default()),
         Span::styled(
             "[Q]",
-            Style::default().fg(Color::DarkGray),
+            Style::default().fg(Color::White),
         ),
         Span::styled(
             " EXIT",
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+            Style::default().fg(Color::Red).add_modifier(Modifier::DIM),
         ),
     ]);
 
@@ -108,7 +108,7 @@ pub fn render_sidebar(f: &mut Frame, area: Rect, current: Tab) {
                 Span::styled(
                     label,
                     Style::default()
-                        .fg(Color::DarkGray)
+                        .fg(Color::White)
                         .add_modifier(Modifier::DIM),
                 ),
             ]);
@@ -120,7 +120,7 @@ pub fn render_sidebar(f: &mut Frame, area: Rect, current: Tab) {
     let block = Block::default()
         .borders(Borders::RIGHT)
         .border_type(BorderType::Plain)
-        .border_style(Style::default().fg(Color::DarkGray));
+        .border_style(Style::default().fg(Color::White));
 
     f.render_widget(List::new(items).block(block), area);
 }

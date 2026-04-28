@@ -28,8 +28,8 @@ fn render_metric(f: &mut Frame, area: Rect, label: &str, value: f64) {
     let dots: String = "·".repeat(dots_needed);
 
     let label_line = Line::from(vec![
-        Span::styled(label, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
-        Span::styled(dots, Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+        Span::styled(label, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+        Span::styled(dots, Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         Span::styled(
             pct_str,
             if clamped >= 85.0 {
@@ -75,12 +75,12 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     let outer = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
-        .border_style(Style::default().fg(Color::DarkGray))
+        .border_style(Style::default().fg(Color::White))
         .title(Line::from(vec![
-            Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+            Span::styled("─── ", Style::default().fg(Color::White)),
             Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
             Span::styled("OVERVIEW", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-            Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+            Span::styled(" ───", Style::default().fg(Color::White)),
         ]));
 
     let inner = outer.inner(area);
@@ -114,7 +114,7 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     f.render_widget(
         Paragraph::new(Line::from(vec![Span::styled(
             "─".repeat(inner.width as usize),
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM),
+            Style::default().fg(Color::White).add_modifier(Modifier::DIM),
         )])),
         sections[7],
     );
@@ -129,9 +129,9 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     let net_block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
-        .border_style(Style::default().fg(Color::DarkGray))
+        .border_style(Style::default().fg(Color::White))
         .title(Line::from(vec![
-            Span::styled(" NET_IO ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+            Span::styled(" NET_IO ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         ]));
 
     let net_inner = net_block.inner(cols[0]);
@@ -157,9 +157,9 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     let hw_block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
-        .border_style(Style::default().fg(Color::DarkGray))
+        .border_style(Style::default().fg(Color::White))
         .title(Line::from(vec![
-            Span::styled(" HARDWARE ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+            Span::styled(" HARDWARE ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         ]));
 
     let hw_inner = hw_block.inner(cols[1]);

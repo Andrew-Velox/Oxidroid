@@ -100,6 +100,7 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
             Constraint::Length(2), // POWER
             Constraint::Length(1), // separator gap
             Constraint::Length(3), // NET_IO + HARDWARE row
+            Constraint::Length(3), // OS + ARCHITECTURE
             Constraint::Min(0),    // remainder
         ])
         .split(inner);
@@ -119,13 +120,13 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
         sections[7],
     );
 
-    // ── bottom info panels ────────────────────────────────────────────────────
-    let cols = Layout::default()
+    // ── bottom info panels (ROW 1) ────────────────────────────────────────────
+    let row1_cols = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(sections[8]);
 
-    // NET_IO panel
+    // NET_IO panel (Top Left)
     let net_block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
@@ -134,26 +135,20 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
             Span::styled(" NET_IO ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         ]));
 
-    let net_inner = net_block.inner(cols[0]);
-    f.render_widget(net_block, cols[0]);
+    let net_inner = net_block.inner(row1_cols[0]);
+    f.render_widget(net_block, row1_cols[0]);
     f.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled("↑ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
-            Span::styled(
-                fmt_speed(data.network.speed_up),
-                Style::default().fg(Color::White),
-            ),
+            Span::styled(fmt_speed(data.network.speed_up), Style::default().fg(Color::White)),
             Span::styled("   ↓ ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-            Span::styled(
-                fmt_speed(data.network.speed_down),
-                Style::default().fg(Color::White),
-            ),
+            Span::styled(fmt_speed(data.network.speed_down), Style::default().fg(Color::White)),
         ]))
         .alignment(Alignment::Left),
         net_inner,
     );
 
-    // HARDWARE panel
+    // HARDWARE panel (Top Right)
     let hw_block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Plain)
@@ -162,20 +157,60 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
             Span::styled(" HARDWARE ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
         ]));
 
-    let hw_inner = hw_block.inner(cols[1]);
-    f.render_widget(hw_block, cols[1]);
+    let hw_inner = hw_block.inner(row1_cols[1]);
+    f.render_widget(hw_block, row1_cols[1]);
     f.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled(
-                format!(
-                    "{} {}",
-                    data.device.manufacturer.to_uppercase(),
-                    data.device.model.to_uppercase()
-                ),
+                format!("{}", data.device.manufacturer.to_uppercase()),
                 Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
             ),
         ]))
         .alignment(Alignment::Left),
         hw_inner,
+    );
+
+    // ── bottom info panels (ROW 2) ────────────────────────────────────────────
+    let row2_cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(sections[9]);
+
+    // SYSTEM / OS panel (Bottom Left)
+    let os_block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Plain)
+        .border_style(Style::default().fg(Color::White))
+        .title(Line::from(vec![
+            Span::styled(" SYSTEM ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+        ]));
+
+    let os_inner = os_block.inner(row2_cols[0]);
+    f.render_widget(os_block, row2_cols[0]);
+    f.render_widget(
+        Paragraph::new(Line::from(vec![
+            Span::styled(data.device.android.clone(), Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        ]))
+        .alignment(Alignment::Left),
+        os_inner,
+    );
+
+    // ARCHITECTURE panel (Bottom Right)
+    let arch_block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Plain)
+        .border_style(Style::default().fg(Color::White))
+        .title(Line::from(vec![
+            Span::styled(" ARCHITECTURE ", Style::default().fg(Color::White).add_modifier(Modifier::DIM)),
+        ]));
+
+    let arch_inner = arch_block.inner(row2_cols[1]);
+    f.render_widget(arch_block, row2_cols[1]);
+    f.render_widget(
+        Paragraph::new(Line::from(vec![
+            Span::styled(data.device.arch.clone(), Style::default().fg(Color::White)),
+        ]))
+        .alignment(Alignment::Left),
+        arch_inner,
     );
 }

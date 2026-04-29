@@ -350,7 +350,7 @@ fn read_device_info() -> DeviceInfo {
     let arch = std::env::consts::ARCH.to_string();
     
     DeviceInfo {
-        manufacturer: format!("{} ::", host),
+        manufacturer: format!("{}", host),
         model: format!("{} ({})", full_os, arch),
         android: full_os, 
         arch, 

@@ -224,26 +224,102 @@ fn read_termux_network() -> Option<String> {
 }
 
 fn read_battery() -> BatteryData {
+    // 1. Try Termux (Android) first
     if let Ok(out) = std::process::Command::new("termux-battery-status").output() {
         if let Ok(s) = std::str::from_utf8(&out.stdout) {
-            fn extract<'a>(s: &'a str, key: &str) -> Option<&'a str> {
-                let k = format!("\"{}\"", key); let pos = s.find(&k)?;
-                let rest = &s[pos + k.len()..]; let colon = rest.find(':')? + 1;
-                let val = rest[colon..].trim();
-                if val.starts_with('"') { let end = val[1..].find('"')?; Some(&val[1..=end]) } else { let end = val.find(|c: char| c == ',' || c == '}').unwrap_or(val.len()); Some(val[..end].trim()) }
+            if s.contains("percentage") {
+                fn extract<'a>(s: &'a str, key: &str) -> Option<&'a str> {
+                    let k = format!("\"{}\"", key); let pos = s.find(&k)?;
+                    let rest = &s[pos + k.len()..]; let colon = rest.find(':')? + 1;
+                    let val = rest[colon..].trim();
+                    if val.starts_with('"') { let end = val[1..].find('"')?; Some(&val[1..=end]) } else { let end = val.find(|c: char| c == ',' || c == '}').unwrap_or(val.len()); Some(val[..end].trim()) }
+                }
+                return BatteryData {
+                    percentage: extract(s, "percentage").and_then(|v| v.parse().ok()).unwrap_or(0),
+                    status: extract(s, "status").unwrap_or("Unknown").to_string(),
+                    health: extract(s, "health").unwrap_or("Unknown").to_string(),
+                    temperature: extract(s, "temperature").and_then(|v| v.parse().ok()).unwrap_or(0.0),
+                    plugged: extract(s, "plugged").unwrap_or("Unknown").to_string(),
+                    current_ua: extract(s, "current").and_then(|v| v.parse().ok()).unwrap_or(0),
+                    time_remaining: "N/A".into(),
+                };
             }
+        }
+    }
+
+    // 2. Fallback for Windows Laptops
+    if cfg!(target_os = "windows") {
+        if let Ok(out) = std::process::Command::new("wmic")
+            .args(["path", "Win32_Battery", "get", "EstimatedChargeRemaining,BatteryStatus", "/format:list"])
+            .output()
+        {
+            let s = String::from_utf8_lossy(&out.stdout);
+            if s.contains("EstimatedChargeRemaining") {
+                let mut pct = 0;
+                let mut status = "Unknown".to_string();
+                
+                for line in s.lines() {
+                    let line = line.trim();
+                    if line.starts_with("EstimatedChargeRemaining=") {
+                        pct = line.split('=').nth(1).unwrap_or("0").parse().unwrap_or(0);
+                    } else if line.starts_with("BatteryStatus=") {
+                        let stat_code = line.split('=').nth(1).unwrap_or("0");
+                        status = match stat_code {
+                            "1" => "Discharging".into(),
+                            "2" => "AC/Plugged In".into(),
+                            "3" => "Fully Charged".into(),
+                            "4" | "5" => "Low/Critical".into(),
+                            "6" | "7" | "8" | "9" => "Charging".into(),
+                            _ => "Unknown".into(),
+                        };
+                    }
+                }
+                return BatteryData {
+                    percentage: pct,
+                    status: status.clone(), // Add .clone() right here!
+                    health: "N/A".into(),
+                    temperature: 0.0,
+                    plugged: if status.contains("Charging") || status.contains("AC") { "Plugged".into() } else { "Unplugged".into() },
+                    current_ua: 0,
+                    time_remaining: "N/A".into(),
+                };
+            }
+        }
+    }
+
+    // 3. Fallback for Linux Laptops
+    if cfg!(target_os = "linux") {
+        let bat_path = std::path::Path::new("/sys/class/power_supply/BAT0");
+        if bat_path.exists() {
+            let pct = std::fs::read_to_string(bat_path.join("capacity"))
+                .unwrap_or_default().trim().parse().unwrap_or(0);
+            let status = std::fs::read_to_string(bat_path.join("status"))
+                .unwrap_or_else(|_| "Unknown".into()).trim().to_string();
+            
             return BatteryData {
-                percentage: extract(s, "percentage").and_then(|v| v.parse().ok()).unwrap_or(0),
-                status: extract(s, "status").unwrap_or("Unknown").to_string(),
-                health: extract(s, "health").unwrap_or("Unknown").to_string(),
-                temperature: extract(s, "temperature").and_then(|v| v.parse().ok()).unwrap_or(0.0),
-                plugged: extract(s, "plugged").unwrap_or("Unknown").to_string(),
-                current_ua: extract(s, "current").and_then(|v| v.parse().ok()).unwrap_or(0),
+                percentage: pct,
+                status: status.clone(),
+                health: "Good".into(),
+                temperature: 0.0,
+                plugged: if status == "Charging" || status == "Full" { "Plugged".into() } else { "Unplugged".into() },
+                current_ua: 0,
                 time_remaining: "N/A".into(),
             };
         }
     }
-    BatteryData { percentage: 0, status: "N/A".into(), health: "N/A".into(), temperature: 0.0, plugged: "N/A".into(), current_ua: 0, time_remaining: "N/A".into() }
+
+    // 4. Default for Desktop PCs (No Battery)
+    BatteryData { 
+        percentage: 0, 
+        status: "N/A".into(), 
+        health: "N/A".into(), 
+        temperature: 0.0, 
+        plugged: "N/A".into(), 
+        current_ua: 0, 
+        time_remaining: "N/A".into() 
+    }
+
+    
 }
 
 fn read_device_info() -> DeviceInfo {
@@ -256,9 +332,10 @@ fn read_device_info() -> DeviceInfo {
     // If we got a manufacturer or model, we are successfully running on Android/Termux
     if !manufacturer.is_empty() || !model.is_empty() {
         let uname = std::process::Command::new("uname").arg("-r").output().ok().and_then(|o| String::from_utf8(o.stdout).ok()).unwrap_or_default().trim().to_string();
+        let raw_version = gp("ro.build.version.release");
         return DeviceInfo { 
             model, 
-            android: gp("ro.build.version.release"), 
+            android: format!("Android {}", raw_version), 
             arch: gp("ro.product.cpu.abi"), 
             manufacturer, 
             kernel: uname 
@@ -273,9 +350,7 @@ fn read_device_info() -> DeviceInfo {
     let arch = std::env::consts::ARCH.to_string();
     
     DeviceInfo {
-        // This will print something like: "MOHABBAT-PC ::"
         manufacturer: format!("{} ::", host),
-        // This will print something like: "Windows 11 (x86_64)"
         model: format!("{} ({})", full_os, arch),
         android: full_os, 
         arch, 

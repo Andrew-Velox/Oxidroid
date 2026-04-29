@@ -39,7 +39,7 @@ fn main() -> Result<()> {
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
     terminal.show_cursor()?;
-    println!("⚡ TmxMon closed!");
+    println!("⚡TmxMon closed!");
     
     Ok(())
 }

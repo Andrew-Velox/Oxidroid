@@ -286,78 +286,71 @@ fn read_termux_uptime() -> Option<u64> {
     let output = std::process::Command::new("uptime").output().ok()?;
     let stdout = std::str::from_utf8(&output.stdout).ok()?;
     
-    // 1. Try Toybox format (Default on Android/Termux)
-    // Format: "up time: 1 days, 00:09:26, idle time: 00:07:15..."
-    if let Some(idx) = stdout.find("up time:") {
-        let rest = &stdout[idx + 8..];
-        let end_idx = rest.find(", idle").unwrap_or(rest.len());
-        let up_str = rest[..end_idx].trim();
+    let mut days = 0;
+    let mut hours = 0;
+    let mut mins = 0;
+    let mut secs = 0;
+
+    // Clean up the string to make parsing uniform (remove commas)
+    let cleaned = stdout.replace(',', " ");
+    
+    // Find where the actual uptime data starts
+    let start_idx = if let Some(idx) = cleaned.find("up time:") {
+        idx + 8
+    } else if let Some(idx) = cleaned.find("up ") {
+        idx + 3
+    } else {
+        return None;
+    };
+    
+    // Find where the uptime data ends
+    let end_idx1 = cleaned.find(" user").unwrap_or(cleaned.len());
+    let end_idx2 = cleaned.find(" idle").unwrap_or(cleaned.len());
+    let end_idx3 = cleaned.find(" load").unwrap_or(cleaned.len());
+    let final_end = end_idx1.min(end_idx2).min(end_idx3);
+    
+    let up_str = cleaned[start_idx..final_end].trim();
+    
+    // Split into words and evaluate each one individually
+    let tokens: Vec<&str> = up_str.split_whitespace().collect();
+    
+    for (i, token) in tokens.iter().enumerate() {
+        let t = token.to_lowercase();
         
-        let mut days = 0;
-        let mut hours = 0;
-        let mut mins = 0;
-        let mut secs = 0;
-        
-        for part in up_str.split(',') {
-            let p = part.trim();
-            if p.contains("day") {
-                if let Some(d) = p.split_whitespace().next() {
-                    days = d.parse::<u64>().unwrap_or(0);
-                }
-            } else if p.contains(':') {
-                let parts: Vec<&str> = p.split(':').collect();
-                if parts.len() == 3 {
-                    hours = parts[0].parse::<u64>().unwrap_or(0);
-                    mins = parts[1].parse::<u64>().unwrap_or(0);
-                    secs = parts[2].parse::<u64>().unwrap_or(0);
-                } else if parts.len() == 2 {
-                    hours = parts[0].parse::<u64>().unwrap_or(0);
-                    mins = parts[1].parse::<u64>().unwrap_or(0);
-                }
+        // Check for Days
+        if t.contains("day") || t == "d" {
+            if i > 0 { days = tokens[i - 1].parse::<u64>().unwrap_or(0); }
+        } 
+        // Check for Hours (This is what was missing!)
+        else if t.contains("hour") || t.contains("hr") || t == "h" {
+            if i > 0 { hours = tokens[i - 1].parse::<u64>().unwrap_or(0); }
+        } 
+        // Check for Minutes
+        else if t.contains("min") || t == "m" {
+            if i > 0 { mins = tokens[i - 1].parse::<u64>().unwrap_or(0); }
+        } 
+        // Check for Seconds
+        else if t.contains("sec") || t == "s" {
+            if i > 0 { secs = tokens[i - 1].parse::<u64>().unwrap_or(0); }
+        } 
+        // Check for Digital Timestamps (e.g. 14:30:00)
+        else if t.contains(':') {
+            let time_parts: Vec<&str> = t.split(':').collect();
+            if time_parts.len() >= 3 {
+                hours = time_parts[0].parse::<u64>().unwrap_or(0);
+                mins = time_parts[1].parse::<u64>().unwrap_or(0);
+                secs = time_parts[2].parse::<u64>().unwrap_or(0);
+            } else if time_parts.len() == 2 {
+                hours = time_parts[0].parse::<u64>().unwrap_or(0);
+                mins = time_parts[1].parse::<u64>().unwrap_or(0);
             }
         }
-        let total = (days * 86400) + (hours * 3600) + (mins * 60) + secs;
-        if total > 0 { return Some(total); }
     }
     
-    // 2. Try Coreutils format (Linux/PC)
-    // Format: " 15:42:10 up 3 days, 12:34,  0 users..."
-    if let Some(up_idx) = stdout.find("up ") {
-        let rest = &stdout[up_idx + 3..];
-        let end_idx = rest.find("user").unwrap_or(rest.len());
-        let mut up_str = rest[..end_idx].trim();
-        if let Some(last_comma) = up_str.rfind(',') {
-            up_str = up_str[..last_comma].trim();
-        }
-        
-        let mut days = 0;
-        let mut hours = 0;
-        let mut mins = 0;
-        
-        for part in up_str.split(',') {
-            let p = part.trim();
-            if p.contains("day") {
-                if let Some(d) = p.split_whitespace().next() {
-                    days = d.parse::<u64>().unwrap_or(0);
-                }
-            } else if p.contains("min") {
-                if let Some(m) = p.split_whitespace().next() {
-                    mins = m.parse::<u64>().unwrap_or(0);
-                }
-            } else if p.contains(':') {
-                let parts: Vec<&str> = p.split(':').collect();
-                if parts.len() == 2 {
-                    hours = parts[0].parse::<u64>().unwrap_or(0);
-                    mins = parts[1].parse::<u64>().unwrap_or(0);
-                } else if parts.len() == 3 {
-                    hours = parts[0].parse::<u64>().unwrap_or(0);
-                    mins = parts[1].parse::<u64>().unwrap_or(0);
-                }
-            }
-        }
-        let total = (days * 86400) + (hours * 3600) + (mins * 60);
-        if total > 0 { return Some(total); }
+    let total = (days * 86400) + (hours * 3600) + (mins * 60) + secs;
+    if total > 0 {
+        Some(total)
+    } else {
+        None
     }
-    
-    None
 }

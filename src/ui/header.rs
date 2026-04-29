@@ -19,11 +19,11 @@ use crate::{app::Tab, types::SystemData, utils::fmt_uptime};
 pub fn render_header(f: &mut Frame, area: Rect, data: &SystemData) {
     let now = Local::now();
 
-    // ◈ TMXMON  ·  2025.04.28  [14:32:07]  ·  UP 03d 07h 41m  ·  ↑↓ NAV  Q EXIT
+    // ◈ Oxidroid  ·  2025.04.28  [14:32:07]  ·  UP 03d 07h 41m  ·  ↑↓ NAV  Q EXIT
     let line = Line::from(vec![
         // Logo glyph + name
         Span::styled("◈ ", Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD)),
-        Span::styled("TMXMON", Style::default()
+        Span::styled("Oxidroid", Style::default()
             .fg(Color::Cyan)
             .add_modifier(Modifier::BOLD)),
         Span::styled("  ·  ", Style::default().fg(Color::White)),

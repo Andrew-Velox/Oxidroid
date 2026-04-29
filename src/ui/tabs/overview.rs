@@ -162,7 +162,7 @@ pub fn render(f: &mut Frame, area: Rect, data: &SystemData) {
     f.render_widget(
         Paragraph::new(Line::from(vec![
             Span::styled(
-                format!("{}", data.device.manufacturer.to_uppercase()),
+                format!("{} {}", data.device.manufacturer.to_uppercase(), data.device.model.to_uppercase()),
                 Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
             ),
         ]))

@@ -351,7 +351,7 @@ fn read_device_info() -> DeviceInfo {
     
     DeviceInfo {
         manufacturer: format!("{}", host),
-        model: format!("{} ({})", full_os, arch),
+        model: format!("",),
         android: full_os, 
         arch, 
         kernel: sysinfo::System::kernel_version().unwrap_or_default(),

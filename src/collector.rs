@@ -96,7 +96,28 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
         drop(d);
         
         thread::sleep(Duration::from_millis(500));
+
+        // YOUR REAL CODE STARTING THE LOOP...
+std::fs::write("trace.txt", "1. Loop started").unwrap();
+
+// Your actual code that reads CPU...
+// (whatever lines you already had here)
+std::fs::write("trace.txt", "2. CPU passed").unwrap();
+
+// Your actual code that reads memory...
+// (whatever lines you already had here)
+std::fs::write("trace.txt", "3. Memory passed").unwrap();
+
+// Your actual code that reads battery...
+// (whatever lines you already had here)
+std::fs::write("trace.txt", "4. Battery passed").unwrap();
+
+// Your actual code that reads network...
+// (whatever lines you already had here)
+std::fs::write("trace.txt", "5. Network passed").unwrap();
     }
+
+    
 }
 
 // ── TERMUX WRAPPERS ─────────────────────────────────────────────────────────

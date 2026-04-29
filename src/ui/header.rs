@@ -38,7 +38,7 @@ pub fn render_header(f: &mut Frame, area: Rect, data: &SystemData) {
         // Time in brackets, cyan hot
         Span::styled("[", Style::default().fg(Color::White)),
         Span::styled(
-            now.format("%H:%M:%S").to_string(),
+            now.format("%I:%M:%S %p").to_string(), // Changed %H to %I, added %p
             Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
         ),
         Span::styled("]", Style::default().fg(Color::White)),

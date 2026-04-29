@@ -268,15 +268,17 @@ fn read_device_info() -> DeviceInfo {
     // 2. GRACEFUL FALLBACK: We are on Windows, Linux, or macOS
     let os_name = sysinfo::System::name().unwrap_or_else(|| "Unknown".into());
     let os_ver = sysinfo::System::os_version().unwrap_or_default();
+    let host = sysinfo::System::host_name().unwrap_or_else(|| "Localhost".into());
+    let full_os = format!("{} {}", os_name, os_ver).trim().to_string();
+    let arch = std::env::consts::ARCH.to_string();
     
     DeviceInfo {
-        // Map the PC Hostname (e.g., "MOHABBAT-PC") to the manufacturer field
-        manufacturer: sysinfo::System::host_name().unwrap_or_else(|| "Localhost".into()),
-        model: String::new(),
-        // Map the OS Name and Version (e.g., "Windows 11") to the android field
-        android: format!("{} {}", os_name, os_ver).trim().to_string(), 
-        // Use Rust's built-in target arch (e.g., "x86_64")
-        arch: std::env::consts::ARCH.to_string(), 
+        // This will print something like: "MOHABBAT-PC ::"
+        manufacturer: format!("{} ::", host),
+        // This will print something like: "Windows 11 (x86_64)"
+        model: format!("{} ({})", full_os, arch),
+        android: full_os, 
+        arch, 
         kernel: sysinfo::System::kernel_version().unwrap_or_default(),
     }
 }

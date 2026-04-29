@@ -27,6 +27,14 @@ std::fs::write("trace.txt", "4. Battery passed").unwrap();
 // Your actual code that reads network...
 // (whatever lines you already had here)
 std::fs::write("trace.txt", "5. Network passed").unwrap();
+// ...
+    std::fs::write("trace.txt", "5. Network passed").unwrap();
+
+    // YOUR SEND CODE (tx.send...)
+    std::fs::write("trace.txt", "6. Send passed").unwrap();
+
+    // YOUR SLEEP CODE (thread::sleep...)
+    std::fs::write("trace.txt", "7. Sleep passed").unwrap();
     
     loop {
         sys.refresh_all(); disks.refresh_list(); networks.refresh_list();

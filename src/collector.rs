@@ -7,34 +7,6 @@ pub fn collect_loop(data: Arc<Mutex<SystemData>>) {
     let mut disks = Disks::new_with_refreshed_list();
     let mut networks = Networks::new_with_refreshed_list();
     let mut last_sent = 0u64; let mut last_recv = 0u64; let mut last_t = Instant::now();
-
-
-            // YOUR REAL CODE STARTING THE LOOP...
-std::fs::write("trace.txt", "1. Loop started").unwrap();
-
-// Your actual code that reads CPU...
-// (whatever lines you already had here)
-std::fs::write("trace.txt", "2. CPU passed").unwrap();
-
-// Your actual code that reads memory...
-// (whatever lines you already had here)
-std::fs::write("trace.txt", "3. Memory passed").unwrap();
-
-// Your actual code that reads battery...
-// (whatever lines you already had here)
-std::fs::write("trace.txt", "4. Battery passed").unwrap();
-
-// Your actual code that reads network...
-// (whatever lines you already had here)
-std::fs::write("trace.txt", "5. Network passed").unwrap();
-// ...
-    std::fs::write("trace.txt", "5. Network passed").unwrap();
-
-    // YOUR SEND CODE (tx.send...)
-    std::fs::write("trace.txt", "6. Send passed").unwrap();
-
-    // YOUR SLEEP CODE (thread::sleep...)
-    std::fs::write("trace.txt", "7. Sleep passed").unwrap();
     
     loop {
         sys.refresh_all(); disks.refresh_list(); networks.refresh_list();
@@ -124,11 +96,7 @@ std::fs::write("trace.txt", "5. Network passed").unwrap();
         drop(d);
         
         thread::sleep(Duration::from_millis(500));
-
-
     }
-
-    
 }
 
 // ── TERMUX WRAPPERS ─────────────────────────────────────────────────────────
@@ -256,31 +224,27 @@ fn read_termux_network() -> Option<String> {
 }
 
 fn read_battery() -> BatteryData {
-    // 1. RAW ANDROID KERNEL FILES (No termux-api needed!)
-    let android_bat = std::path::Path::new("/sys/class/power_supply/battery");
-    if android_bat.exists() {
-        let pct = std::fs::read_to_string(android_bat.join("capacity"))
-            .unwrap_or_default().trim().parse().unwrap_or(0);
-        
-        let status = std::fs::read_to_string(android_bat.join("status"))
-            .unwrap_or_else(|_| "Unknown".into()).trim().to_string();
-            
-        // Android stores temp as an integer (e.g., 350 = 35.0°C)
-        let temp_raw = std::fs::read_to_string(android_bat.join("temp"))
-            .unwrap_or_default().trim().parse::<f32>().unwrap_or(0.0);
-            
-        let current = std::fs::read_to_string(android_bat.join("current_now"))
-            .unwrap_or_default().trim().parse::<i64>().unwrap_or(0);
-
-        return BatteryData {
-            percentage: pct,
-            status: status.clone(),
-            health: std::fs::read_to_string(android_bat.join("health")).unwrap_or_else(|_| "N/A".into()).trim().to_string(),
-            temperature: temp_raw / 10.0, 
-            plugged: if status == "Charging" || status == "Full" { "Plugged".into() } else { "Unplugged".into() },
-            current_ua: current,
-            time_remaining: "N/A".into(),
-        };
+    // 1. Try Termux (Android) first
+    if let Ok(out) = std::process::Command::new("termux-battery-status").output() {
+        if let Ok(s) = std::str::from_utf8(&out.stdout) {
+            if s.contains("percentage") {
+                fn extract<'a>(s: &'a str, key: &str) -> Option<&'a str> {
+                    let k = format!("\"{}\"", key); let pos = s.find(&k)?;
+                    let rest = &s[pos + k.len()..]; let colon = rest.find(':')? + 1;
+                    let val = rest[colon..].trim();
+                    if val.starts_with('"') { let end = val[1..].find('"')?; Some(&val[1..=end]) } else { let end = val.find(|c: char| c == ',' || c == '}').unwrap_or(val.len()); Some(val[..end].trim()) }
+                }
+                return BatteryData {
+                    percentage: extract(s, "percentage").and_then(|v| v.parse().ok()).unwrap_or(0),
+                    status: extract(s, "status").unwrap_or("Unknown").to_string(),
+                    health: extract(s, "health").unwrap_or("Unknown").to_string(),
+                    temperature: extract(s, "temperature").and_then(|v| v.parse().ok()).unwrap_or(0.0),
+                    plugged: extract(s, "plugged").unwrap_or("Unknown").to_string(),
+                    current_ua: extract(s, "current").and_then(|v| v.parse().ok()).unwrap_or(0),
+                    time_remaining: "N/A".into(),
+                };
+            }
+        }
     }
 
     // 2. Fallback for Windows Laptops
@@ -312,10 +276,10 @@ fn read_battery() -> BatteryData {
                 }
                 return BatteryData {
                     percentage: pct,
+                    status: status.clone(), // Add .clone() right here!
+                    health: "N/A".into(),
+                    temperature: 0.0,
                     plugged: if status.contains("Charging") || status.contains("AC") { "Plugged".into() } else { "Unplugged".into() },
-                    status,
-                    health: "N/A".into(), 
-                    temperature: 0.0,     
                     current_ua: 0,
                     time_remaining: "N/A".into(),
                 };
@@ -334,10 +298,10 @@ fn read_battery() -> BatteryData {
             
             return BatteryData {
                 percentage: pct,
-                plugged: if status == "Charging" || status == "Full" { "Plugged".into() } else { "Unplugged".into() },
-                status,
+                status: status.clone(),
                 health: "Good".into(),
                 temperature: 0.0,
+                plugged: if status == "Charging" || status == "Full" { "Plugged".into() } else { "Unplugged".into() },
                 current_ua: 0,
                 time_remaining: "N/A".into(),
             };
@@ -346,14 +310,16 @@ fn read_battery() -> BatteryData {
 
     // 4. Default for Desktop PCs (No Battery)
     BatteryData { 
-        percentage: 100, 
-        status: "AC Mains".into(), 
-        health: "Optimal".into(), 
+        percentage: 0, 
+        status: "N/A".into(), 
+        health: "N/A".into(), 
         temperature: 0.0, 
-        plugged: "Direct/Wall".into(), 
+        plugged: "N/A".into(), 
         current_ua: 0, 
-        time_remaining: "Infinite".into() 
+        time_remaining: "N/A".into() 
     }
+
+    
 }
 
 fn read_device_info() -> DeviceInfo {

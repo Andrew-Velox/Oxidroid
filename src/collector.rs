@@ -224,8 +224,11 @@ fn read_termux_network() -> Option<String> {
 }
 
 fn read_battery() -> BatteryData {
-    // 1. Try Termux (Android) first
-    if let Ok(out) = std::process::Command::new("termux-battery-status").output() {
+    // 1. Try Termux (Android) first — wrapped in a 1-second timeout so it doesn't freeze the app!
+    if let Ok(out) = std::process::Command::new("timeout")
+        .args(["1", "termux-battery-status"]) // Kills the command if it takes longer than 1 second
+        .output() 
+    {
         if let Ok(s) = std::str::from_utf8(&out.stdout) {
             if s.contains("percentage") {
                 fn extract<'a>(s: &'a str, key: &str) -> Option<&'a str> {

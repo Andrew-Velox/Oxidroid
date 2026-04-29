@@ -2,29 +2,33 @@
 
 ![Demo](./assets/demo.gif)
 
-A fast, modern TUI dashboard for Termux — rewritten in Rust using `ratatui`.
+A blazingly fast, modern TUI system monitor originally built for Termux — rewritten in Rust using `ratatui`. 
 
-## Features
+While optimized for Android hardware environments, TmxMon features graceful native fallbacks, making it a fully cross-platform monitoring dashboard for Windows and Linux desktops as well.
+
+## ✨ Features
 - **Overview** — CPU, Memory, Storage, Battery gauges + Network speed + Device info
-- **CPU** — Overall + per-core gauges, model, frequency stats
-- **Memory** — RAM & Swap gauges with detailed breakdown
+- **CPU** — Overall + per-core gauges, model, and live frequency stats
+- **Memory** — RAM & Swap gauges with detailed usage breakdown
 - **Storage** — Disk usage + built-in interactive file explorer
-- **Battery** — Charge level, status, health, temperature, current (via `termux-battery-status`)
-- **Network** — Live upload/download speed, IP, total transferred
-- **Processes** — Top 20 processes by CPU usage
-- **Settings** — Adjustable refresh rate & battery capacity
+- **Battery** — Charge level, status, health, temperature, and current 
+- **Network** — Live upload/download speed, IP, and total data transferred
+- **Processes** — Top 20 processes sorted by live CPU usage
+- **Settings** — Adjustable refresh rate & battery capacity configs
 
-## Install & Build
+## 🛠️ Install & Build
 
 ```bash
-pkg install rust
-pkg install git
+# Install dependencies (Termux)
+pkg install rust git
+
+# Clone and run
 git clone https://github.com/Andrew-Velox/TmxMon.git
 cd TmxMon
 cargo run --release
 ```
 
-
+## ⌨️ Keybindings
 
 | Key | Action |
 |-----|--------|
@@ -36,13 +40,13 @@ cargo run --release
 | `r` | Reset settings to defaults |
 | `q` | Quit |
 
-## Dependencies (auto-fetched by Cargo)
+## 📦 Dependencies
 - `ratatui` — TUI framework
 - `crossterm` — Terminal control
-- `sysinfo` — System info
-- `chrono` — Date/time
+- `sysinfo` — Core system info gathering
+- `chrono` — Date/time formatting
 - `anyhow` — Error handling
 
-## Notes
-- Battery info requires `termux-battery-status` (from `termux-api` package)
-- Device info requires `getprop` (standard on Android/Termux)
+## 📝 Notes
+- **Android:** Battery info requires `termux-battery-status` (install via the `termux-api` package). Device info requires standard Android `getprop`.
+- **Desktop:** On Windows and Linux, TmxMon automatically bypasses Termux dependencies and uses native WMI/sysfs to read hardware and battery data.

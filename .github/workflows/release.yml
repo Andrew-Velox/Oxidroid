@@ -50,7 +50,8 @@ jobs:
       - name: Upload Artifacts
         uses: softprops/action-gh-release@v2
         with:
+          # This tells GitHub to pick up the build and rename it based on your matrix
           files: |
-            target/${{ matrix.target }}/release/oxidroid
-            target/${{ matrix.target }}/release/oxidroid.exe
+            target/${{ matrix.target }}/release/oxidroid -> ${{ matrix.name }}
+            target/${{ matrix.target }}/release/oxidroid.exe -> ${{ matrix.name }}
           fail_on_unmatched_files: false

@@ -1,11 +1,11 @@
 [package]
-name = "termux-monitor"
+name = "oxidroid"
 version = "0.1.0"
 edition = "2021"
-description = "Termux System Monitor - Modern TUI Dashboard"
+description = "Oxidroid - Modern TUI Dashboard"
 
 [[bin]]
-name = "termux-monitor"
+name = "oxidroid"
 path = "src/main.rs"
 
 [dependencies]

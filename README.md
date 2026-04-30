@@ -7,7 +7,7 @@
 
 **Oxidroid** is a fast, polished Terminal User Interface (TUI) system monitor built in Rust. Originally created for Android via Termux, it now runs smoothly on Linux and Windows too.
 
-![Oxidroid UI](assets/demo.gif)
+![Oxidroid UI](assets/Oxidroid.gif)
 
 ## Highlights
 

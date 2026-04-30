@@ -1,21 +1,16 @@
-#!/data/data/com.termux/files/usr/bin/bash
-# Termux Monitor - Install Script
-set -e
+#!/bin/bash
 
-echo "🚀 Installing Termux Monitor..."
+echo "⚡ Installing Oxidroid..."
 
-# Install Rust if not present
-if ! command -v cargo &>/dev/null; then
-    echo "📦 Installing Rust toolchain..."
-    pkg install rust -y
-fi
+# 1. Install system dependencies
+pkg update
+pkg install termux-api wget -y
 
-# Build
-echo "🔨 Building (this may take a few minutes)..."
-cargo build --release
+# 2. Download the latest release binary
+wget https://github.com/Andrew-Velox/Oxidroid/releases/download/v0.1.3/oxidroid
 
-# Copy binary
-cp target/release/termux-monitor "$PREFIX/bin/termux-monitor"
-chmod +x "$PREFIX/bin/termux-monitor"
+# 3. Set permissions and move to bin
+chmod +x oxidroid
+mv oxidroid $PREFIX/bin/
 
-echo "✅ Done! Run with: termux-monitor"
+echo "✅ Installation complete! Just type 'oxidroid' to start."

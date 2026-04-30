@@ -47,14 +47,22 @@ jobs:
           fi
         shell: bash
 
+      - name: Prepare Binary for Upload
+        run: |
+          # Create a staging directory
+          mkdir -p staging
+          # Determine the binary name (check for .exe)
+          if [ -f "target/${{ matrix.target }}/release/oxidroid.exe" ]; then
+            cp target/${{ matrix.target }}/release/oxidroid.exe staging/${{ matrix.name }}
+          else
+            cp target/${{ matrix.target }}/release/oxidroid staging/${{ matrix.name }}
+          fi
+        shell: bash
+
       - name: Upload Artifacts
         uses: softprops/action-gh-release@v2
         with:
-          # Use wildcards to catch the file regardless of architecture subfolders
-          files: |
-            target/**/release/oxidroid
-            target/**/release/oxidroid.exe
-          # This ensures the release title stays clean
+          files: staging/*
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

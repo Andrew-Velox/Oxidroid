@@ -22,11 +22,21 @@
 
 Oxidroid is distributed as a single, standalone binary. Download the correct file for your OS, then run it using the appropriate commands below.
 
+
+
+### The Universal Way 
+
+```bash
+git clone https://github.com/Andrew-Velox/Oxidroid.git
+cd Oxidroid
+cargo build --release
+```
+
 ### Android (Termux)
 Install Termux and Termux:API from F-Droid before proceeding:
 
 - Download **Termux**: [F-Droid Link](https://f-droid.org/packages/com.termux/)
-- Download **Termux:API**: [F-Droid Link](https://f-droid.org/packages/com.termux.api/)
+- Download **Termux:API**: [F-Droid Link](https://f-droid.org/packages/com.termux.api/) (~3.8 MiB)
 
 Install dependencies:
 ```bash
@@ -36,10 +46,6 @@ pkg install wget termux-api -y
 Download the binary:
 ```bash
 wget -O $PREFIX/bin/oxidroid https://github.com/Andrew-Velox/Oxidroid/releases/download/v0.1.8/oxidroid-android-aarch64
-```
-
-Run it:
-```bash
 chmod +x $PREFIX/bin/oxidroid
 hash -r
 oxidroid
@@ -49,10 +55,6 @@ oxidroid
 Download the binary:
 ```bash
 wget https://github.com/Andrew-Velox/Oxidroid/releases/download/v0.1.8/oxidroid-linux-x86_64
-```
-
-Run it:
-```bash
 chmod +x oxidroid-linux-x86_64
 ./oxidroid-linux-x86_64
 ```
@@ -61,10 +63,6 @@ chmod +x oxidroid-linux-x86_64
 Download the binary:
 ```powershell
 Invoke-WebRequest -Uri "https://github.com/Andrew-Velox/Oxidroid/releases/download/v0.1.8/oxidroid-windows.exe" -OutFile "oxidroid.exe"
-```
-
-Run it:
-```powershell
 .\oxidroid.exe
 ```
 *(Note: Windows SmartScreen may flag the `.exe` since it is a new open-source binary. Click "More info" -> "Run anyway").*
@@ -78,15 +76,17 @@ Once installed, run:
 oxidroid
 ```
 
-## Building from Source
+## Keybindings
 
-If you prefer to compile the project yourself, ensure you have [Rust](https://www.rust-lang.org/tools/install) installed, then run:
-```bash
-git clone https://github.com/Andrew-Velox/Oxidroid.git
-cd Oxidroid
-cargo build --release
-```
-The compiled binary will be located in `target/release/oxidroid`.
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Navigate tabs |
+| `Tab` | Next tab |
+| `Enter` | Open file explorer (Storage tab) |
+| `Esc` | Close file explorer |
+| `←` / `→` | Adjust setting value (Settings tab) |
+| `r` | Reset settings to defaults |
+| `q` | Quit |
 
 ---
 
